@@ -1,0 +1,222 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8 ;
+-- -----------------------------------------------------
+-- Schema subasta_online
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema subasta_online
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `subasta_online` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+USE `mydb` ;
+
+-- -----------------------------------------------------
+-- Table `subasta_online`.`usuario`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `subasta_online`.`usuario` (
+  `id_usuario` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(45) NOT NULL,
+  `correo` VARCHAR(100) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `telefono` VARCHAR(13) NOT NULL,
+  `rol` ENUM('vendedor', 'user') NOT NULL,
+  `activo` TINYINT(1) NOT NULL,
+  `fecha_registro` DATETIME NOT NULL,
+  PRIMARY KEY (`id_usuario`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `subasta_online`.`vendedor`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `subasta_online`.`vendedor` (
+  `id_usuario` INT NOT NULL,
+  `documento` VARCHAR(11) NOT NULL,
+  `nombre_comercial` VARCHAR(45) NOT NULL,
+  `direccion` VARCHAR(45) NOT NULL,
+  `cuenta_bancaria` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id_usuario`),
+  CONSTRAINT `fk_vendedor_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `subasta_online`.`usuario` (`id_usuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `subasta_online`.`categoria`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `subasta_online`.`categoria` (
+  `id_categoria` INT NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(45) NOT NULL,
+  `descripcion` VARCHAR(255) NULL DEFAULT NULL,
+  PRIMARY KEY (`id_categoria`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `subasta_online`.`articulo`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `subasta_online`.`articulo` (
+  `id_articulo` INT NOT NULL AUTO_INCREMENT,
+  `titulo` VARCHAR(45) NOT NULL,
+  `descripcion` VARCHAR(255) NULL DEFAULT NULL,
+  `condicion` ENUM('nuevo', 'bueno', 'medio', 'malo') NOT NULL,
+  `imagenURL` VARCHAR(255) NOT NULL,
+  `vendedor_id_usuario` INT NOT NULL,
+  `categoria_id_categoria` INT NOT NULL,
+  PRIMARY KEY (`id_articulo`),
+  INDEX `fk_articulo_vendedor1_idx` (`vendedor_id_usuario` ASC) VISIBLE,
+  INDEX `fk_articulo_categoria1_idx` (`categoria_id_categoria` ASC) VISIBLE,
+  CONSTRAINT `fk_articulo_vendedor1`
+    FOREIGN KEY (`vendedor_id_usuario`)
+    REFERENCES `subasta_online`.`vendedor` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_articulo_categoria1`
+    FOREIGN KEY (`categoria_id_categoria`)
+    REFERENCES `subasta_online`.`categoria` (`id_categoria`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `mydb`.`subasta`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mydb`.`subasta` (
+  `id_subasta` INT NOT NULL AUTO_INCREMENT,
+  `precio_inicial` FLOAT NOT NULL,
+  `incremento_minimo` FLOAT NOT NULL,
+  `precio_actual` FLOAT NOT NULL,
+  `fecha_inicio` DATETIME NOT NULL,
+  `fecha_fin` DATETIME NOT NULL,
+  `estado` ENUM('en_curso', 'por_empezar', 'terminada', 'calcelada') NOT NULL,
+  `articulo_id_articulo` INT NOT NULL,
+  `vendedor_id_usuario` INT NOT NULL,
+  `usuario_id_usuario` INT NOT NULL,
+  PRIMARY KEY (`id_subasta`),
+  INDEX `fk_subasta_articulo_idx` (`articulo_id_articulo` ASC) VISIBLE,
+  INDEX `fk_subasta_vendedor1_idx` (`vendedor_id_usuario` ASC) VISIBLE,
+  INDEX `fk_subasta_usuario1_idx` (`usuario_id_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_subasta_articulo`
+    FOREIGN KEY (`articulo_id_articulo`)
+    REFERENCES `subasta_online`.`articulo` (`id_articulo`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_subasta_vendedor1`
+    FOREIGN KEY (`vendedor_id_usuario`)
+    REFERENCES `subasta_online`.`vendedor` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_subasta_usuario1`
+    FOREIGN KEY (`usuario_id_usuario`)
+    REFERENCES `subasta_online`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `mydb`.`puja`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mydb`.`puja` (
+  `id_puja` INT NOT NULL AUTO_INCREMENT,
+  `monto` FLOAT NOT NULL,
+  `fecha` DATETIME NOT NULL,
+  `esmaxima` TINYINT NOT NULL,
+  `subasta_id_subasta` INT NOT NULL,
+  `usuario_id_usuario` INT NOT NULL,
+  PRIMARY KEY (`id_puja`),
+  INDEX `fk_puja_subasta1_idx` (`subasta_id_subasta` ASC) VISIBLE,
+  INDEX `fk_puja_usuario1_idx` (`usuario_id_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_puja_subasta1`
+    FOREIGN KEY (`subasta_id_subasta`)
+    REFERENCES `mydb`.`subasta` (`id_subasta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_puja_usuario1`
+    FOREIGN KEY (`usuario_id_usuario`)
+    REFERENCES `subasta_online`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `mydb`.`historial_puja`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mydb`.`historial_puja` (
+  `id_historial_puja` INT NOT NULL AUTO_INCREMENT,
+  `monto_oferfa` FLOAT NOT NULL,
+  `monto_anterior` FLOAT NULL,
+  `fecha` DATETIME NOT NULL,
+  `subasta_id_subasta` INT NOT NULL,
+  `usuario_id_usuario` INT NOT NULL,
+  PRIMARY KEY (`id_historial_puja`),
+  INDEX `fk_historial_puja_subasta1_idx` (`subasta_id_subasta` ASC) VISIBLE,
+  INDEX `fk_historial_puja_usuario1_idx` (`usuario_id_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_historial_puja_subasta1`
+    FOREIGN KEY (`subasta_id_subasta`)
+    REFERENCES `mydb`.`subasta` (`id_subasta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_historial_puja_usuario1`
+    FOREIGN KEY (`usuario_id_usuario`)
+    REFERENCES `subasta_online`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `mydb`.`pago`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mydb`.`pago` (
+  `id_pago` INT NOT NULL AUTO_INCREMENT,
+  `monto` FLOAT NOT NULL,
+  `estado_pago` ENUM('realizado', 'en_espera', 'rechazado') NOT NULL,
+  `fechapago` DATETIME NULL,
+  `subasta_id_subasta` INT NOT NULL,
+  `usuario_id_usuario` INT NOT NULL,
+  PRIMARY KEY (`id_pago`),
+  INDEX `fk_pago_subasta1_idx` (`subasta_id_subasta` ASC) VISIBLE,
+  INDEX `fk_pago_usuario1_idx` (`usuario_id_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_pago_subasta1`
+    FOREIGN KEY (`subasta_id_subasta`)
+    REFERENCES `mydb`.`subasta` (`id_subasta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_pago_usuario1`
+    FOREIGN KEY (`usuario_id_usuario`)
+    REFERENCES `subasta_online`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+USE `subasta_online` ;
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
